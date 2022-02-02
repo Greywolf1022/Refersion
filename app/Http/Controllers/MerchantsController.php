@@ -12,9 +12,6 @@ use GuzzleHttp\Client;
 
 class MerchantsController extends Controller
 {
-
-  public $token = 'ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6VXhNaUo5LmV5SjFjMlZ5WDJsa0lqb2lOVFF6T0RnaUxDSjFjMlZ5WDNSNWNHVWlPaUpEVEVsRlRsUWlMQ0prWVhSbElqb2lNakF5TWkwd01TMHhOQ0F5TURveE9Eb3hNU0o5LnpNalVEZmpsZkZ1bXJTRGNES0lSRTlqa183a2hNazU0U09FM1hwYzBfamFKTi1icTdQRUJmRm45bWJuOG1ibkhFRDlMUFRlZ3dER3U4azBQR1BhREd3';
-
   public function getMerchants(Request $request)
   {
     $shop = User::first();
@@ -37,7 +34,7 @@ class MerchantsController extends Controller
     }
     GRAPHQL;
 
-    return $this->graphql_query('https://graphql.refersion.com', $query, $this->token);
+    return $this->graphql_query('https://graphql.refersion.com', $query, $_ENV['REFERSION_KEY']);
   }
 
   public function editPaypalAddress(Request $request)
@@ -51,8 +48,8 @@ class MerchantsController extends Controller
       'headers' => [
         'Accept' => 'application/json',
         'Content-Type' => 'application/json',
-        'Refersion-Public-Key' => 'pub_85bc6da0224fa7d58342',
-        'Refersion-Secret-Key' => 'sec_8a211f56d91c19bb5b2b',
+        'Refersion-Public-Key' => $_ENV['Refersion_Public_Key'],
+        'Refersion-Secret-Key' => $_ENV['Refersion_Secret_Key'],
       ],
     ]);
 
@@ -72,7 +69,7 @@ class MerchantsController extends Controller
     }
     GRAPHQL;
 
-    return $this->graphql_query('https://graphql.refersion.com', $query, $this->token);
+    return $this->graphql_query('https://graphql.refersion.com', $query, $_ENV['REFERSION_KEY']);
   }
 
   public function graphql_query(string $endpoint, string $query, ?string $token = null): array
