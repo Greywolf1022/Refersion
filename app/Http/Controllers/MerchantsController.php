@@ -34,17 +34,18 @@ class MerchantsController extends Controller
     }
     GRAPHQL;
 
-    return $this->graphql_query('https://graphql.refersion.com', $query, $_ENV['REFERSION_KEY']);
+    return $this->graphql_query('https://graphql.refersion.com', $query, [], $_ENV['REFERSION_KEY']);
   }
 
   public function editPaypalAddress(Request $request)
   {
     $client = new Client();
 
-    $request_data = $request->json()->all();
+    $affiliate_id = $request->id;
+    $paypal_email = $request->paypal_email;
 
     $response = $client->request('POST', 'https://www.refersion.com/api/edit_affiliate', [
-      'body' => '{"id":"6340222","paypal_email":"lucas@bluestout.com"}',
+      'body' => '{"id":"'. $affiliate_id .'","paypal_email":"'. $paypal_email .'"}',
       'headers' => [
         'Accept' => 'application/json',
         'Content-Type' => 'application/json',
@@ -58,21 +59,21 @@ class MerchantsController extends Controller
 
   public function validateUser(Request $request)
   {
-    $request_data = $request->json()->all();
+    $email = $request->email;
 
     $query = <<<'GRAPHQL'
-    query {
-      affiliates(email: "lucas@bluestout.com") {
+    query validateUser($email: String!) {
+      affiliates(email: $email) {
         id,
         status
       }
     }
     GRAPHQL;
 
-    return $this->graphql_query('https://graphql.refersion.com', $query, $_ENV['REFERSION_KEY']);
+    return $this->graphql_query('https://graphql.refersion.com', $query, ['email' => $email], $_ENV['REFERSION_KEY']);
   }
 
-  public function graphql_query(string $endpoint, string $query, ?string $token = null): array
+  public function graphql_query(string $endpoint, string $query, array $variables = [], ?string $token = null): array
   {
     $headers = ['Content-Type: application/json'];
     if (null !== $token) {
@@ -83,7 +84,7 @@ class MerchantsController extends Controller
         'http' => [
             'method' => 'POST',
             'header' => $headers,
-            'content' => json_encode(['query' => $query]),
+            'content' => json_encode(['query' => $query, 'variables' => $variables]),
         ]
     ]))) {
         $error = error_get_last();
