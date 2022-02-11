@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Osiset\BasicShopifyAPI\BasicShopifyAPI;
@@ -14,27 +13,58 @@ class MerchantsController extends Controller
 {
   public function getMerchants(Request $request)
   {
-    $shop = User::first();
+    $email = $request->email;
+    $date_ranges = json_decode($request->dates);
 
-    if(!$shop) {
-      echo "App isn't installed to store.";
-      exit();
+    $query = <<<'GRAPHQL'
+    query getCouponCode($email: String!) {
+      affiliates(email: $email) {
+        paypal_email,
+        conversions {
+          coupon_code
+        }
+      }
+    }
+    GRAPHQL;
+
+    $coupon_code = $this->graphql_query('https://graphql.refersion.com', $query, ['email' => $email], $_ENV['REFERSION_KEY']);
+    $commissions = array();
+    foreach ($date_ranges as $index => $date) {
+      $query = <<<'GRAPHQL'
+      query getCommission($email: String!, $from: Int!, $to: Int!) {
+        affiliates (email: $email) {
+          conversions(created_from: $from, created_to: $to) {
+            commission_total
+            currency
+          }
+        }
+      }
+      GRAPHQL;
+
+      $commission = $this->graphql_query('https://graphql.refersion.com', $query, ['email' => $email, 'from' => $date->from, 'to' =>$date->to], $_ENV['REFERSION_KEY']);
+      array_push($commissions, $commission);
     }
 
-    $request_data = $request->json()->all();
+    return json_encode([$coupon_code, $commissions]);
+  }
 
+  public function getPosition(Request $request)
+  {
     $query = <<<'GRAPHQL'
     query {
       affiliates {
-        status, 
-        name, 
-        email, 
-        rfsn_parameter
+        name,
+        id,
+        email,
+        clicks {
+          created
+        }
       }
     }
     GRAPHQL;
 
     return $this->graphql_query('https://graphql.refersion.com', $query, [], $_ENV['REFERSION_KEY']);
+
   }
 
   public function editPaypalAddress(Request $request)
@@ -65,6 +95,7 @@ class MerchantsController extends Controller
     query validateUser($email: String!) {
       affiliates(email: $email) {
         id,
+        paypal_email,
         status
       }
     }
